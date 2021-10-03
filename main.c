@@ -31,7 +31,7 @@
 #define MAX_VERTEX_BUFFER 512 * 1024
 #define MAX_ELEMENT_BUFFER 128 * 1024
 
-#define MAX_TIMERS 5
+#define MAX_TIMERS 10
 
 static void error_callback(int e, const char *d)
 {
@@ -158,7 +158,23 @@ int main(int argc, char *argv[])
             for (int i = 0; i < timer_grid->active_timers; i++) {
                 nk_layout_row_static(ctx, 0, 150, 5);
                 Timer *this_timer = timer_grid->timers[i];
+                char start_stop_message[10];
+                if (this_timer->status == 'a') {
+                    sprintf(&start_stop_message, "Start");
+                } else {
+                    sprintf(&start_stop_message, "Stop");
+                }
 
+                if (nk_button_label(ctx, start_stop_message)) {
+                    switch (this_timer->status) {
+                        case 'a': {
+                            timer_grid->timers[i]->status = 'b';
+                        } break;
+                        case 'b': {
+                            timer_grid->timers[i]->status = 'a';
+                        } break;
+                    }
+                }
                 if (nk_button_label(ctx, "Add hour")) {
                     timer_grid->timers[i]->hours += 1;
                     fprintf(stdout, "button has been pressed\n");
@@ -175,13 +191,13 @@ int main(int argc, char *argv[])
                 }
 
                 char display_text[255];
-                sprintf(&display_text, "Hours: %d,  Minutes: %d,  Seconds: %d", 
+                sprintf(&display_text, "  Hours: %d,  Minutes: %d,  Seconds: %d", 
                     this_timer->hours, this_timer->minutes, this_timer->seconds);
 
                 nk_label_colored(ctx, display_text, NK_TEXT_CENTERED, nk_rgb(255,255,0));
             }
 
-            nk_layout_row_static(ctx, 0, 250, 2);
+            nk_layout_row_static(ctx, 0, 50, 2);
             if (nk_button_label(ctx, "+")) {
                 // TODO handle this case
                 if (timer_grid->active_timers >= MAX_TIMERS) {
