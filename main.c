@@ -88,8 +88,9 @@ void add_timer_to_grid(TimerGrid *grid, Timer *timer)
 }
 
 // NOTE make this happen
-void remove_timer_from_grid(TimerGrid *grid, Timer *timer)
+void remove_timer_from_grid(TimerGrid *grid, int idx)
 {
+
 }
 
 
@@ -152,20 +153,12 @@ int main(int argc, char *argv[])
         // NK_API nk_bool nk_begin(struct nk_context *ctx, const char *title, struct nk_rect bounds, nk_flags flags);
         if (nk_begin(ctx, "Study Timer", calc_rect, NK_WINDOW_TITLE)) {
 
-            nk_layout_row_static(ctx, 0, 150, 1);
-            if (nk_button_label(ctx, "Create New Timer")) {
-                // TODO handle this case
-                if (timer_grid->active_timers >= MAX_TIMERS) {
-                    fprintf(stdout, "Error cannot add more timers\n");
-                } else {
-                    timer_grid->timers[timer_grid->active_timers] = timer_create(timer_grid->active_timers, 'a', 0, 0, 0);
-                    timer_grid->active_timers += 1;
-                }
-            }
+            
 
             for (int i = 0; i < timer_grid->active_timers; i++) {
-                nk_layout_row_static(ctx, 0, 250, 4);
+                nk_layout_row_static(ctx, 0, 150, 5);
                 Timer *this_timer = timer_grid->timers[i];
+
                 if (nk_button_label(ctx, "Add hour")) {
                     timer_grid->timers[i]->hours += 1;
                     fprintf(stdout, "button has been pressed\n");
@@ -186,6 +179,25 @@ int main(int argc, char *argv[])
                     this_timer->hours, this_timer->minutes, this_timer->seconds);
 
                 nk_label_colored(ctx, display_text, NK_TEXT_CENTERED, nk_rgb(255,255,0));
+            }
+
+            nk_layout_row_static(ctx, 0, 250, 2);
+            if (nk_button_label(ctx, "+")) {
+                // TODO handle this case
+                if (timer_grid->active_timers >= MAX_TIMERS) {
+                    fprintf(stdout, "Error cannot add more timers\n");
+                } else {
+                    timer_grid->timers[timer_grid->active_timers] = timer_create(timer_grid->active_timers, 'a', 0, 0, 0);
+                    timer_grid->active_timers += 1;
+                }
+            }
+            if (nk_button_label(ctx, "-")) {
+                // TODO handle this case
+                if (timer_grid->active_timers == 0) {
+                    fprintf(stdout, "no timers to remove\n");
+                } else {
+                    timer_grid->active_timers -= 1;
+                }
             }
 
             // int len; char buffer[256];
