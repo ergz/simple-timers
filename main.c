@@ -31,7 +31,7 @@
 #define MAX_VERTEX_BUFFER 512 * 1024
 #define MAX_ELEMENT_BUFFER 128 * 1024
 
-#define MAX_TIMERS
+#define MAX_TIMERS 5
 
 static void error_callback(int e, const char *d)
 {
@@ -92,7 +92,7 @@ void remove_timer_from_grid(TimerGrid *grid, Timer *timer)
 {
 }
 
-    
+
 
 int main(int argc, char *argv[]) 
 {
@@ -100,8 +100,6 @@ int main(int argc, char *argv[])
     static GLFWwindow *win;
     int widht = 0, height = 0;
     struct nk_colorf bg;
-
-
 
     glfwSetErrorCallback(error_callback);
 
@@ -154,47 +152,42 @@ int main(int argc, char *argv[])
         // NK_API nk_bool nk_begin(struct nk_context *ctx, const char *title, struct nk_rect bounds, nk_flags flags);
         if (nk_begin(ctx, "Study Timer", calc_rect, NK_WINDOW_TITLE)) {
 
-            nk_layout_row_static(ctx, 0, 150, 3);
-
+            nk_layout_row_static(ctx, 0, 150, 1);
             if (nk_button_label(ctx, "Create New Timer")) {
                 // TODO handle this case
-                // if (timer_grid->active_timers >= MAX_TIMERS) {
-                //     fprintf(stdout, "Error cannot add more timers\n");
-                // }
-
-                timer_grid->timers[timer_grid->active_timers] = timer_create(timer_grid->active_timers, 'a', 0, 0, 0);
-                timer_grid->active_timers += 1;
+                if (timer_grid->active_timers >= MAX_TIMERS) {
+                    fprintf(stdout, "Error cannot add more timers\n");
+                } else {
+                    timer_grid->timers[timer_grid->active_timers] = timer_create(timer_grid->active_timers, 'a', 0, 0, 0);
+                    timer_grid->active_timers += 1;
+                }
             }
-            // if (nk_button_label(ctx, "Add hour")) {
-            //     // fprintf(stdout, "button has been pressed\n");
-            //     switch (timer->status) {
-            //         case 'b': {
-            //             timer->hours += 1;
-            //             fprintf(stdout, "hours in the timer: %d\n", timer->hours);
-            //         } break;
-            //         case 'a': {
-            //             fprintf(stdout, "there is no timer started\n");
-            //         } break;
-            //         default: {
-            //             exit(1);
-            //         }
-            //     }
-            // }
-            // if (nk_button_label(ctx, "Add minute")) {
-            //     switch (timer->status) {
-            //         case 'b': {
-            //             timer->minutes += 1;
-            //             fprintf(stdout, "minutes in the timer: %d\n", timer->minutes);
-            //         } break;
-            //         case 'a': {
-            //             fprintf(stdout, "there is no timer started\n");
-            //         } break;
-            //         default: {
-            //             exit(1);
-            //         }
-            //     }
-            // }
-        
+
+            for (int i = 0; i < timer_grid->active_timers; i++) {
+                nk_layout_row_static(ctx, 0, 250, 4);
+                Timer *this_timer = timer_grid->timers[i];
+                if (nk_button_label(ctx, "Add hour")) {
+                    timer_grid->timers[i]->hours += 1;
+                    fprintf(stdout, "button has been pressed\n");
+                    fprintf(stdout, "the HOURS on this timer are: %d\n", this_timer->hours);
+
+                }
+                if (nk_button_label(ctx, "Add minute")) {
+                    timer_grid->timers[i]->minutes += 1;
+                    fprintf(stdout, "button has been pressed\n");
+                }
+                if (nk_button_label(ctx, "Add second")) {
+                    timer_grid->timers[i]->seconds += 1;
+                    fprintf(stdout, "button has been pressed\n");
+                }
+
+                char display_text[255];
+                sprintf(&display_text, "Hours: %d,  Minutes: %d,  Seconds: %d", 
+                    this_timer->hours, this_timer->minutes, this_timer->seconds);
+
+                nk_label_colored(ctx, display_text, NK_TEXT_CENTERED, nk_rgb(255,255,0));
+            }
+
             // int len; char buffer[256];
             // NK_API nk_flags nk_edit_string(struct nk_context*, nk_flags, char *buffer, int *len, int max, nk_plugin_filter);
             // nk_edit_string(ctx, NK_EDIT_READ_ONLY, buffer, &len, 255, NULL);
@@ -208,8 +201,6 @@ int main(int argc, char *argv[])
             //         timer->hours, timer->minutes, timer->seconds);
             // }
 
-            // nk_layout_row_static(ctx, 0, 500, 1);
-            // nk_label_colored(ctx, screen_display, NK_TEXT_CENTERED, nk_rgb(255,255,0));
 
         }
         nk_end(ctx);
