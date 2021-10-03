@@ -44,6 +44,7 @@ typedef struct Timer {
     int seconds; 
     int minutes;
     int hours;
+    time_t time;
 } Timer;
 
 typedef struct TimerGrid {
@@ -156,6 +157,12 @@ int main(int argc, char *argv[])
             
 
             for (int i = 0; i < timer_grid->active_timers; i++) {
+
+                // clock time for all active timers
+                if (timer_grid->timers[i]->status == 'b') {
+                    timer_grid->timers[i]->time = clock();
+                }
+
                 nk_layout_row_static(ctx, 0, 150, 5);
                 Timer *this_timer = timer_grid->timers[i];
                 char start_stop_message[10];
@@ -184,6 +191,7 @@ int main(int argc, char *argv[])
                 if (nk_button_label(ctx, "Add minute")) {
                     timer_grid->timers[i]->minutes += 1;
                     fprintf(stdout, "button has been pressed\n");
+                    fprintf(stdout, "time since this clock was started %d\n", (intmax_t)timer_grid->timers[i]->time/CLOCKS_PER_SEC);
                 }
                 if (nk_button_label(ctx, "Add second")) {
                     timer_grid->timers[i]->seconds += 1;
