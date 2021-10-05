@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <limits.h>
 #include <time.h>
+#include <stdbool.h>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -39,12 +40,13 @@ static void error_callback(int e, const char *d)
 }
 
 typedef struct Timer {
-    int id;
-    char status; // is the timer going?
+    char is_running; // is the timer going?
     int seconds; 
     int minutes;
     int hours;
-    time_t time;
+    int toggled;
+    time_t time_x; 
+    time_t time_y;
 } Timer;
 
 typedef struct TimerGrid {
@@ -52,13 +54,13 @@ typedef struct TimerGrid {
     Timer *timers[MAX_TIMERS];
 } TimerGrid;
 
-Timer *timer_create(int id, char status, int seconds, int minutes, int hours) 
+Timer *timer_create(int seconds, int minutes, int hours) 
 {
     Timer *timer = malloc(sizeof(Timer));
     assert(timer != NULL);
     
-    timer->id = id; 
-    timer->status = status; // a: off b: init c: running
+    timer->toggled = 0; 
+    timer->is_running = false; // a: off b: init c: running
     timer->seconds = seconds;
     timer->minutes = minutes;
     timer->hours = hours;
@@ -94,8 +96,6 @@ void remove_timer_from_grid(TimerGrid *grid, int idx)
 
 }
 
-
-
 int main(int argc, char *argv[]) 
 {
     struct nk_glfw glfw = {0};
@@ -124,7 +124,6 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Failed to setup GLEW\n");
         exit(1);
     }
-
 
     struct nk_context *ctx = nk_glfw3_init(&glfw, win, NK_GLFW3_INSTALL_CALLBACKS);
 
@@ -158,41 +157,49 @@ int main(int argc, char *argv[])
 
             for (int i = 0; i < timer_grid->active_timers; i++) {
 
-                // clock time for all active timers
-                if (timer_grid->timers[i]->status == 'b') {
-                    timer_grid->timers[i]->time = clock();
+                // clock time for the active timers every iteration
+                if (timer_grid->timers[i]->is_running) {
+                    timer_grid->timers[i]->time_y = time(NULL);
                 }
 
                 nk_layout_row_static(ctx, 0, 150, 5);
                 Timer *this_timer = timer_grid->timers[i];
                 char start_stop_message[10];
-                if (this_timer->status == 'a') {
-                    sprintf(&start_stop_message, "Start");
-                } else {
+
+                if (this_timer->is_running) {
                     sprintf(&start_stop_message, "Stop");
+                } else {
+                    sprintf(&start_stop_message, "Start");
                 }
 
                 if (nk_button_label(ctx, start_stop_message)) {
-                    switch (this_timer->status) {
-                        case 'a': {
-                            timer_grid->timers[i]->status = 'b';
-                        } break;
-                        case 'b': {
-                            timer_grid->timers[i]->status = 'a';
-                        } break;
-                    }
+                    if (this_timer->is_running) { // turn off
+                        timer_grid->timers[i]->is_running = false;
+                        timer_grid->timers[i]->toggled += 1; // 
+                        timer_grid->timers[i]->time_x = time(NULL);
+                        fprintf(stdout, "the state of the toggle %d\n", timer_grid->timers[i]->toggled);
+                        fprintf(stdout, "the state of the running %d\n", timer_grid->timers[i]->is_running);
+                    } else { // turn on
+                        timer_grid->timers[i]->is_running = true;
+                        timer_grid->timers[i]->toggled += 1; // 
+                        fprintf(stdout, "the state of the toggle %d\n", timer_grid->timers[i]->toggled);
+                        fprintf(stdout, "the state of the running %d\n", timer_grid->timers[i]->is_running);
+                    } 
                 }
+
                 if (nk_button_label(ctx, "Add hour")) {
                     timer_grid->timers[i]->hours += 1;
                     fprintf(stdout, "button has been pressed\n");
                     fprintf(stdout, "the HOURS on this timer are: %d\n", this_timer->hours);
-
                 }
+
                 if (nk_button_label(ctx, "Add minute")) {
                     timer_grid->timers[i]->minutes += 1;
-                    fprintf(stdout, "button has been pressed\n");
-                    fprintf(stdout, "time since this clock was started %d\n", (intmax_t)timer_grid->timers[i]->time/CLOCKS_PER_SEC);
+                    fprintf(stdout, "the state of the toggle is: %d\n", timer_grid->timers[i]->toggled);
+                    // fprintf(stdout, "CLOCK X %s\n", (intmax_t)(timer_grid->timers[i]->time_x));
+                    fprintf(stdout, "CLOCK Y %s\n", (intmax_t)(timer_grid->timers[i]->time_y));
                 }
+
                 if (nk_button_label(ctx, "Add second")) {
                     timer_grid->timers[i]->seconds += 1;
                     fprintf(stdout, "button has been pressed\n");
@@ -206,15 +213,18 @@ int main(int argc, char *argv[])
             }
 
             nk_layout_row_static(ctx, 0, 50, 2);
+
             if (nk_button_label(ctx, "+")) {
                 // TODO handle this case
                 if (timer_grid->active_timers >= MAX_TIMERS) {
                     fprintf(stdout, "Error cannot add more timers\n");
                 } else {
-                    timer_grid->timers[timer_grid->active_timers] = timer_create(timer_grid->active_timers, 'a', 0, 0, 0);
+                    timer_grid->timers[timer_grid->active_timers] = timer_create(0, 0, 0);
+                    fprintf(stdout, "+ BUTTON CLICKED .... toggle state: %d\n", timer_grid->timers[timer_grid->active_timers]->toggled);
                     timer_grid->active_timers += 1;
                 }
             }
+
             if (nk_button_label(ctx, "-")) {
                 // TODO handle this case
                 if (timer_grid->active_timers == 0) {
