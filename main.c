@@ -45,8 +45,11 @@ typedef struct Timer {
     int minutes;
     int hours;
     int toggled;
+    time_t time_base;
     time_t time_x; 
     time_t time_y;
+    double time_delta;
+    int secs_to_end;
 } Timer;
 
 typedef struct TimerGrid {
@@ -72,9 +75,7 @@ Timer *timer_create(int seconds, int minutes, int hours)
 TimerGrid *init_timer_grid() 
 {
     TimerGrid *grid = malloc(sizeof(TimerGrid)); // allocate all mem at once?
-
     grid->active_timers = 0;
-
     return grid;
 }
 
@@ -94,6 +95,16 @@ void add_timer_to_grid(TimerGrid *grid, Timer *timer)
 void remove_timer_from_grid(TimerGrid *grid, int idx)
 {
 
+}
+
+void timer_destroy(Timer *timer) 
+{
+    
+}
+
+int hms_to_seconds(int hrs, int mins, int secs) 
+{
+    return (hrs * 60 * 60) + (mins * 60) + secs;
 }
 
 int main(int argc, char *argv[]) 
@@ -153,16 +164,36 @@ int main(int argc, char *argv[])
         // NK_API nk_bool nk_begin(struct nk_context *ctx, const char *title, struct nk_rect bounds, nk_flags flags);
         if (nk_begin(ctx, "Study Timer", calc_rect, NK_WINDOW_TITLE)) {
 
-            
-
             for (int i = 0; i < timer_grid->active_timers; i++) {
 
                 // clock time for the active timers every iteration
                 if (timer_grid->timers[i]->is_running) {
-                    timer_grid->timers[i]->time_y = time(NULL);
+                    if (timer_grid->timers[i]->toggled == 1) { // first time run? if so then start the base timer
+                        timer_grid->timers[i]->toggled += 1;
+                        timer_grid->timers[i]->time_base = time(NULL);
+                        timer_grid->timers[i]->time_delta = difftime(time(NULL), timer_grid->timers[i]->time_base);
+                        fprintf(stdout, "TIME DELTA: %f\n", timer_grid->timers[i]->time_delta);
+                        if (timer_grid->timers[i]->time_delta >= timer_grid->timers[i]->secs_to_end) {
+                            fprintf(stdout, "DONE!!!\n");
+                            exit(0);
+                        }
+                        
+                    } else {
+                        // timer_grid->timers[i]->time_y = time(NULL);
+                        timer_grid->timers[i]->time_delta = difftime(time(NULL), timer_grid->timers[i]->time_base);
+
+                        if (timer_grid->timers[i]->time_delta >= timer_grid->timers[i]->secs_to_end) {
+                            fprintf(stdout, "DONE!!!\n");
+                            exit(0);
+                        } else {
+                            fprintf(stdout, "there is %f seconds left\n", timer_grid->timers[i]->time_delta - timer_grid->timers[i]->secs_to_end);
+                        }
+                        // fprintf(stdout, "the value %s\n", asctime(gmtime(&(timer_grid->timers[i]->time_y))));
+                        // fprintf(stdout, "the time delta is: %s\n", asctime(gmtime(timer_grid->timers[i]->time_base)));
+                    }
                 }
 
-                nk_layout_row_static(ctx, 0, 150, 5);
+                nk_layout_row_static(ctx, 0, 250, 5);
                 Timer *this_timer = timer_grid->timers[i];
                 char start_stop_message[10];
 
@@ -189,25 +220,40 @@ int main(int argc, char *argv[])
 
                 if (nk_button_label(ctx, "Add hour")) {
                     timer_grid->timers[i]->hours += 1;
+                    timer_grid->timers[i]->secs_to_end = hms_to_seconds(
+                        timer_grid->timers[i]->hours, 
+                        timer_grid->timers[i]->minutes, 
+                        timer_grid->timers[i]->seconds
+                        );
                     fprintf(stdout, "button has been pressed\n");
                     fprintf(stdout, "the HOURS on this timer are: %d\n", this_timer->hours);
                 }
 
                 if (nk_button_label(ctx, "Add minute")) {
                     timer_grid->timers[i]->minutes += 1;
+                    timer_grid->timers[i]->secs_to_end = hms_to_seconds(
+                        timer_grid->timers[i]->hours, 
+                        timer_grid->timers[i]->minutes, 
+                        timer_grid->timers[i]->seconds
+                        );
                     fprintf(stdout, "the state of the toggle is: %d\n", timer_grid->timers[i]->toggled);
                     // fprintf(stdout, "CLOCK X %s\n", (intmax_t)(timer_grid->timers[i]->time_x));
-                    fprintf(stdout, "CLOCK Y %s\n", (intmax_t)(timer_grid->timers[i]->time_y));
+                    // fprintf(stdout, "CLOCK Y %s\n", (intmax_t)(timer_grid->timers[i]->time_y));
                 }
 
                 if (nk_button_label(ctx, "Add second")) {
                     timer_grid->timers[i]->seconds += 1;
+                    timer_grid->timers[i]->secs_to_end = hms_to_seconds(
+                        timer_grid->timers[i]->hours, 
+                        timer_grid->timers[i]->minutes, 
+                        timer_grid->timers[i]->seconds
+                        );
                     fprintf(stdout, "button has been pressed\n");
                 }
 
                 char display_text[255];
                 sprintf(&display_text, "  Hours: %d,  Minutes: %d,  Seconds: %d", 
-                    this_timer->hours, this_timer->minutes, this_timer->seconds);
+                    (int)this_timer->time_delta, this_timer->minutes, this_timer->seconds);
 
                 nk_label_colored(ctx, display_text, NK_TEXT_CENTERED, nk_rgb(255,255,0));
             }
@@ -233,20 +279,6 @@ int main(int argc, char *argv[])
                     timer_grid->active_timers -= 1;
                 }
             }
-
-            // int len; char buffer[256];
-            // NK_API nk_flags nk_edit_string(struct nk_context*, nk_flags, char *buffer, int *len, int max, nk_plugin_filter);
-            // nk_edit_string(ctx, NK_EDIT_READ_ONLY, buffer, &len, 255, NULL);
-
-            // char screen_display[255];
-            // if (timer->status == 'a') {
-            //     sprintf(screen_display, "No timer started");
-            // } else {
-
-            //     sprintf(screen_display, "Hours: %d;  Minutes: %d;   Seconds: %d", 
-            //         timer->hours, timer->minutes, timer->seconds);
-            // }
-
 
         }
         nk_end(ctx);
