@@ -99,7 +99,7 @@ void remove_timer_from_grid(TimerGrid *grid, int idx)
 
 void timer_destroy(Timer *timer) 
 {
-    
+
 }
 
 int hms_to_seconds(int hrs, int mins, int secs) 
@@ -161,46 +161,43 @@ int main(int argc, char *argv[])
 
         struct nk_rect calc_rect = nk_rect(0, 0, widht, height);
 
-        // NK_API nk_bool nk_begin(struct nk_context *ctx, const char *title, struct nk_rect bounds, nk_flags flags);
         if (nk_begin(ctx, "Study Timer", calc_rect, NK_WINDOW_TITLE)) {
 
             for (int i = 0; i < timer_grid->active_timers; i++) {
 
+                char *start_stop_message;
                 // clock time for the active timers every iteration
+                // TODO(ergz): this branch of the if statements seems very very very bad
+                // please fix this!!!! 
                 if (timer_grid->timers[i]->is_running) {
                     if (timer_grid->timers[i]->toggled == 1) { // first time run? if so then start the base timer
                         timer_grid->timers[i]->toggled += 1;
                         timer_grid->timers[i]->time_base = time(NULL);
                         timer_grid->timers[i]->time_delta = difftime(time(NULL), timer_grid->timers[i]->time_base);
-                        fprintf(stdout, "TIME DELTA: %f\n", timer_grid->timers[i]->time_delta);
                         if (timer_grid->timers[i]->time_delta >= timer_grid->timers[i]->secs_to_end) {
-                            fprintf(stdout, "DONE!!!\n");
-                            exit(0);
+                            timer_grid->timers[i]->is_running = false;
                         }
                         
                     } else {
-                        // timer_grid->timers[i]->time_y = time(NULL);
                         timer_grid->timers[i]->time_delta = difftime(time(NULL), timer_grid->timers[i]->time_base);
 
                         if (timer_grid->timers[i]->time_delta >= timer_grid->timers[i]->secs_to_end) {
                             fprintf(stdout, "DONE!!!\n");
-                            exit(0);
+                            timer_grid->timers[i]->is_running = false;
                         } else {
                             fprintf(stdout, "there is %f seconds left\n", timer_grid->timers[i]->time_delta - timer_grid->timers[i]->secs_to_end);
                         }
-                        // fprintf(stdout, "the value %s\n", asctime(gmtime(&(timer_grid->timers[i]->time_y))));
-                        // fprintf(stdout, "the time delta is: %s\n", asctime(gmtime(timer_grid->timers[i]->time_base)));
                     }
                 }
 
-                nk_layout_row_static(ctx, 0, 250, 5);
+                nk_layout_row_static(ctx, 0, 300, 5);
                 Timer *this_timer = timer_grid->timers[i];
-                char start_stop_message[10];
+
 
                 if (this_timer->is_running) {
-                    sprintf(&start_stop_message, "Stop");
+                    start_stop_message = "Stop";
                 } else {
-                    sprintf(&start_stop_message, "Start");
+                    start_stop_message = "Start";
                 }
 
                 if (nk_button_label(ctx, start_stop_message)) {
@@ -208,13 +205,9 @@ int main(int argc, char *argv[])
                         timer_grid->timers[i]->is_running = false;
                         timer_grid->timers[i]->toggled += 1; // 
                         timer_grid->timers[i]->time_x = time(NULL);
-                        fprintf(stdout, "the state of the toggle %d\n", timer_grid->timers[i]->toggled);
-                        fprintf(stdout, "the state of the running %d\n", timer_grid->timers[i]->is_running);
                     } else { // turn on
                         timer_grid->timers[i]->is_running = true;
                         timer_grid->timers[i]->toggled += 1; // 
-                        fprintf(stdout, "the state of the toggle %d\n", timer_grid->timers[i]->toggled);
-                        fprintf(stdout, "the state of the running %d\n", timer_grid->timers[i]->is_running);
                     } 
                 }
 
@@ -225,8 +218,6 @@ int main(int argc, char *argv[])
                         timer_grid->timers[i]->minutes, 
                         timer_grid->timers[i]->seconds
                         );
-                    fprintf(stdout, "button has been pressed\n");
-                    fprintf(stdout, "the HOURS on this timer are: %d\n", this_timer->hours);
                 }
 
                 if (nk_button_label(ctx, "Add minute")) {
@@ -236,9 +227,6 @@ int main(int argc, char *argv[])
                         timer_grid->timers[i]->minutes, 
                         timer_grid->timers[i]->seconds
                         );
-                    fprintf(stdout, "the state of the toggle is: %d\n", timer_grid->timers[i]->toggled);
-                    // fprintf(stdout, "CLOCK X %s\n", (intmax_t)(timer_grid->timers[i]->time_x));
-                    // fprintf(stdout, "CLOCK Y %s\n", (intmax_t)(timer_grid->timers[i]->time_y));
                 }
 
                 if (nk_button_label(ctx, "Add second")) {
@@ -248,12 +236,11 @@ int main(int argc, char *argv[])
                         timer_grid->timers[i]->minutes, 
                         timer_grid->timers[i]->seconds
                         );
-                    fprintf(stdout, "button has been pressed\n");
                 }
 
-                char display_text[255];
+                char display_text[500];
                 sprintf(&display_text, "  Hours: %d,  Minutes: %d,  Seconds: %d", 
-                    (int)this_timer->time_delta, this_timer->minutes, this_timer->seconds);
+                    this_timer->hours, this_timer->minutes, this_timer->seconds);
 
                 nk_label_colored(ctx, display_text, NK_TEXT_CENTERED, nk_rgb(255,255,0));
             }
