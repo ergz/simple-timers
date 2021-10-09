@@ -110,6 +110,54 @@ void seconds_to_hms(int seconds)
 
 }
 
+    // struct nk_style_button {
+    //                 /* background */
+    //                 struct nk_style_item normal;
+    //                 struct nk_style_item hover;
+    //                 struct nk_style_item active;
+    //                 struct nk_color border_color;
+
+    //                 /* text */
+    //                 struct nk_color text_background;
+    //                 struct nk_color text_normal;
+    //                 struct nk_color text_hover;
+    //                 struct nk_color text_active;
+    //                 nk_flags text_alignment;
+
+    //                 /* properties */
+    //                 float border;
+    //                 float rounding;
+    //                 struct nk_vec2 padding;
+    //                 struct nk_vec2 image_padding;
+    //                 struct nk_vec2 touch_padding;
+
+    //                 /* optional user callbacks */
+    //                 nk_handle userdata;
+    //                 void(*draw_begin)(struct nk_command_buffer*, nk_handle userdata);
+    //                 void(*draw_end)(struct nk_command_buffer*, nk_handle userdata);
+    //             };
+
+
+struct nk_style_button create_button_style(struct nk_color background_color, struct nk_color text_color, 
+    struct nk_color border_color)
+{
+    struct nk_style_button button_style;
+    struct nk_style_item button_color = {NK_STYLE_ITEM_COLOR, background_color}; 
+
+    button_style.normal = button_color;
+    button_style.hover = button_color;
+    button_style.active = button_color;
+    button_style.border_color = border_color;
+
+    button_style.text_background = text_color;
+    button_style.text_normal = text_color;
+    button_style.text_hover = text_color;
+    button_style.text_active = text_color;
+    button_style.text_alignment = NK_TEXT_CENTERED;
+    button_style.border = 1;
+    return button_style;
+}
+
 int main(int argc, char *argv[]) 
 {
     struct nk_glfw glfw = {0};
@@ -140,6 +188,9 @@ int main(int argc, char *argv[])
     }
 
     struct nk_context *ctx = nk_glfw3_init(&glfw, win, NK_GLFW3_INSTALL_CALLBACKS);
+    struct nk_style_button bttn_style;
+    bttn_style = create_button_style(nk_rgb(255, 0, 0), nk_rgb(0, 255, 0), nk_rgb(0, 0, 255));
+    
 
     // create a font atlas struct and 
     struct nk_font_atlas *atlas;
@@ -245,6 +296,10 @@ int main(int argc, char *argv[])
                         );
                 }
 
+                // NOTE(ergz) for I want to start working on changing the color 
+                // of the button based on the timer status
+                // NK_API nk_bool nk_button_label_styled(struct nk_context*, const struct nk_style_button*, const char *title);
+
                 char display_text[500];
                 sprintf(&display_text, "  Hours: %d,  Minutes: %d,  Seconds: %d", 
                     this_timer->hours, this_timer->minutes, this_timer->seconds);
@@ -252,7 +307,11 @@ int main(int argc, char *argv[])
                 nk_label_colored(ctx, display_text, NK_TEXT_CENTERED, nk_rgb(255,255,0));
             }
 
-            nk_layout_row_static(ctx, 0, 50, 2);
+            nk_layout_row_static(ctx, 0, 100, 3);
+
+            if (nk_button_label_styled(ctx, &bttn_style, "XXX")) {
+                fprintf(stdout, "the new fancy button was pressed\n");
+            }
 
             if (nk_button_label(ctx, "+")) {
                 // TODO handle this case
