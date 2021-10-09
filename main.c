@@ -26,7 +26,7 @@
 #include "nuklear.h"
  #include "nuklear_glfw_gl3.h"
 
-#define WINDOW_WIDTH 1200
+#define WINDOW_WIDTH 1800
 #define WINDOW_HEIGHT 800
 
 #define MAX_VERTEX_BUFFER 512 * 1024
@@ -40,7 +40,7 @@ static void error_callback(int e, const char *d)
 }
 
 typedef struct Timer {
-    char is_running; // is the timer going?
+    bool is_running; // is the timer going?
     int seconds; 
     int minutes;
     int hours;
@@ -82,29 +82,32 @@ TimerGrid *init_timer_grid()
 // add a timer to the timer grid
 void add_timer_to_grid(TimerGrid *grid, Timer *timer)
 {
-    // if (grid->active_timers > MAX_TIMERS) {
-    //     fprintf(stdout, "ERROR: too many timers!\n");
-    //     exit(1);
-    // }
-
     grid->timers[grid->active_timers] = timer;
     grid->active_timers += 1; 
 }
 
-// NOTE make this happen
-void remove_timer_from_grid(TimerGrid *grid, int idx)
-{
 
-}
-
+// TODO(emanuel) 
 void timer_destroy(Timer *timer) 
 {
+    assert(timer != NULL);
 
+    free(timer);
 }
 
 int hms_to_seconds(int hrs, int mins, int secs) 
 {
     return (hrs * 60 * 60) + (mins * 60) + secs;
+}
+
+/* this function should take the time remaining in seconds
+    and update the Timer structs hours, mins, seconds.
+    The purpose for this is to update the display on the 
+    app.
+*/
+void seconds_to_hms(int seconds)
+{
+
 }
 
 int main(int argc, char *argv[]) 
@@ -172,10 +175,10 @@ int main(int argc, char *argv[])
                 if (timer_grid->timers[i]->is_running) {
                     if (timer_grid->timers[i]->toggled == 1) { // first time run? if so then start the base timer
                         timer_grid->timers[i]->toggled += 1;
-                        timer_grid->timers[i]->time_base = time(NULL);
                         timer_grid->timers[i]->time_delta = difftime(time(NULL), timer_grid->timers[i]->time_base);
                         if (timer_grid->timers[i]->time_delta >= timer_grid->timers[i]->secs_to_end) {
                             timer_grid->timers[i]->is_running = false;
+                            timer_grid->timers[i]->time_delta = 0;
                         }
                         
                     } else {
@@ -184,6 +187,8 @@ int main(int argc, char *argv[])
                         if (timer_grid->timers[i]->time_delta >= timer_grid->timers[i]->secs_to_end) {
                             fprintf(stdout, "DONE!!!\n");
                             timer_grid->timers[i]->is_running = false;
+                            timer_grid->timers[i]->time_delta = 0;
+
                         } else {
                             fprintf(stdout, "there is %f seconds left\n", timer_grid->timers[i]->time_delta - timer_grid->timers[i]->secs_to_end);
                         }
@@ -200,6 +205,7 @@ int main(int argc, char *argv[])
                     start_stop_message = "Start";
                 }
 
+                // Start Stop Button ----------------------------
                 if (nk_button_label(ctx, start_stop_message)) {
                     if (this_timer->is_running) { // turn off
                         timer_grid->timers[i]->is_running = false;
@@ -208,6 +214,7 @@ int main(int argc, char *argv[])
                     } else { // turn on
                         timer_grid->timers[i]->is_running = true;
                         timer_grid->timers[i]->toggled += 1; // 
+                        timer_grid->timers[i]->time_base = time(NULL);
                     } 
                 }
 
@@ -264,6 +271,7 @@ int main(int argc, char *argv[])
                     fprintf(stdout, "no timers to remove\n");
                 } else {
                     timer_grid->active_timers -= 1;
+                    timer_destroy(timer_grid->timers[timer_grid->active_timers]);
                 }
             }
 
